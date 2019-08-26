@@ -1,0 +1,112 @@
+package org.firstinspires.ftc.teamcode;
+
+//Installing needed libraries
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
+
+@TeleOp(name="Henry's Driver Control", group="Iterative Opmode")
+
+public class HenrysDriverControl extends OpMode
+{
+    //Setting up variables for each component
+    private ElapsedTime runtime = new ElapsedTime();
+    private DcMotor leftMotor1 = null;
+    private DcMotor leftMotor2 = null;
+    private DcMotor rightMotor3 = null;
+    private DcMotor rightMotor4 = null;
+
+    @Override
+    public void init() {
+        
+        //Telemetry Status
+        telemetry.addData("Status", "Initialized");
+
+        //Getting set configurations
+        leftMotor1 = hardwareMap.get(DcMotor.class, "left_Motor1");
+        leftMotor2 = hardwareMap.get(DcMotor.class, "left_Motor2");
+        rightMotor3 = hardwareMap.get(DcMotor.class, "right_Motor3");
+        rightMotor4 = hardwareMap.get(DcMotor.class, "right_Motor4");
+
+        //Reversing the right side motors
+        leftMotor1.setDirection(DcMotor.Direction.FORWARD);
+        leftMotor2.setDirection(DcMotor.Direction.FORWARD);
+        rightMotor3.setDirection(DcMotor.Direction.REVERSE);
+        rightMotor4.setDirection(DcMotor.Direction.REVERSE);
+        
+        //Telemetry Status
+        telemetry.addData("Status", "Initialization Complete");
+    }
+
+    @Override
+    public void init_loop() {
+        
+    }
+
+    @Override
+    public void start() {
+        //Reset our elapsed time
+        runtime.reset();
+    }
+
+    @Override
+    public void loop() {
+        //Variable to control driveMode
+        double driveMode = 0;
+        
+        //Variables to control power
+        double leftMotor1Power;
+        double leftMotor2Power;
+        double rightMotor3Power;
+        double rightMotor4Power;
+        
+        //Switch driveMode using Y button
+        if(gamepad1.y && driveMode == 0){
+            driveMode = 1;    
+        } else if(gamepad1.y && driveMode == 1){
+            driveMode = 0;
+        }
+        
+        //Drive Modes(Airplane or Tank)
+        if(driveMode == 0) {
+            //Airplane
+            double drive = -gamepad1.left_stick_y;
+            double turn  =  gamepad1.right_stick_x;
+        
+            leftMotor1Power = Range.clip(drive + turn, -1.0, 1.0);
+            leftMotor2Power = Range.clip(drive + turn, -1.0, 1.0);
+            rightMotor3Power  = Range.clip(drive - turn, -1.0, 1.0);
+            rightMotor4Power  = Range.clip(drive - turn, -1.0, 1.0);
+        } else {
+            //Tank Drive
+            leftMotor1Power = -gamepad1.left_stick_y;
+            leftMotor2Power = -gamepad1.left_stick_y;
+            rightMotor3Power = -gamepad1.right_stick_y;
+            rightMotor4Power = -gamepad1.right_stick_y;
+        }
+        
+        //Set motor powers to power variables
+        leftMotor1.setPower(leftMotor1Power);
+        leftMotor2.setPower(leftMotor2Power);
+        rightMotor3.setPower(rightMotor3Power);
+        rightMotor4.setPower(rightMotor4Power);
+        
+        //Telemetry for debugging
+        telemetry.addData("Status", "Run Time: " + runtime.toString());
+    }
+
+    /*
+     * Code to run ONCE after the driver hits STOP
+     */
+    @Override
+    public void stop() {
+        leftMotor1.setPower(0);
+        leftMotor2.setPower(0);
+        rightMotor3.setPower(0);
+        rightMotor4.setPower(0);    
+    }
+
+}

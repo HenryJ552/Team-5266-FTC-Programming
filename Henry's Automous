@@ -111,19 +111,35 @@ public class HenrysAutonomous extends OpMode
         double ticks = distance * 89.12877;
         resetEncoders();
         
-        double avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()));
+        double avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
         
         getImuAngles();
-        double setAngle = getTrueZAngle(); 
-        double currentAng = getTrueZAngle();
-        while(avgEnc < ticks) {
-            getImuAngles();
-            currentAng = getTrueZAngle();
-            double correction = (setAngle - currentAng) * p; 
+        double rawAngle = getReadZAngle();
+        
+        if(Math.abs(rawAngle) < 10) { 
+            double setAngle = getReadZAngle(); 
+            double currentAng = getReadZAngle();
+            while(avgEnc < ticks) {
+                getImuAngles();
+                currentAng = getReadZAngle();
+                double correction = currentAng * p; 
             
-            avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()));
+                avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
             
-            setArcadeMotorPowers(speed,correction);
+                setArcadeMotorPowers(speed,correction);
+            }
+        } else {
+            double setAngle = getTrueZAngle(); 
+            double currentAng = getTrueZAngle();
+            while(avgEnc < ticks) {
+                getImuAngles();
+                currentAng = getTrueZAngle();
+                double correction = (setAngle - currentAng) * p; 
+            
+                avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
+            
+                setArcadeMotorPowers(speed,correction);    
+            }
         }
     }
     
@@ -132,29 +148,60 @@ public class HenrysAutonomous extends OpMode
         double currentAngle = getTrueZAngle();
         double targetAngle = currentAngle + angle;
         
-        if(angle > 0) {
+        if(angle > 0 && targetAngle > 0 && targetAngle < 360) {
             while(currentAngle < targetAngle) {
-            getImuAngles();
-            currentAngle = getTrueZAngle();
-            turn(speed);
+                getImuAngles();
+                currentAngle = getTrueZAngle();
+                turn(speed);
             }
             
             while(currentAngle > targetAngle) {
+                getImuAngles();
+                currentAngle = getTrueZAngle();
+                turn(-speed/2);
+            }
+        } else if(angle < 0 && targetAngle > 0) {
+            while(currentAngle > targetAngle) {
+                getImuAngles();
+                currentAngle = getTrueZAngle();
+                turn(-speed);
+            }
+            
+            while(currentAngle < targetAngle) {
+                getImuAngles();
+                currentAngle = getTrueZAngle();
+                turn(speed/2);
+            }
+        } else if(angle < 0 && targetAngle < 0) {
             getImuAngles();
-            currentAngle = getTrueZAngle();
-            turn(-speed/2);
+            currentAngle = getReadZAngle();
+            
+            while(currentAngle > targetAngle) {
+                getImuAngles();
+                currentAngle = getReadZAngle();
+                turn(-speed);
+            }
+            
+            while(currentAngle < targetAngle) {
+                getImuAngles();
+                currentAngle = getReadZAngle();
+                turn(speed/2);
             }
         } else {
-            while(currentAngle > targetAngle) {
             getImuAngles();
-            currentAngle = getTrueZAngle();
-            turn(-speed);
-            }
+            currentAngle = getReadZAngle();
+            targetAngle = targetAngle - 360;
             
             while(currentAngle < targetAngle) {
-            getImuAngles();
-            currentAngle = getTrueZAngle();
-            turn(speed/2);
+                getImuAngles();
+                currentAngle = getReadZAngle();
+                turn(speed);
+            }
+            
+            while(currentAngle > targetAngle) {
+                getImuAngles();
+                currentAngle = getReadZAngle();
+                turn(-speed/2);
             }
         }
     }
@@ -168,10 +215,10 @@ public class HenrysAutonomous extends OpMode
         double ticks = distance * 89.12877;
         resetEncoders();
         
-        double avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()));
+        double avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
         
         while(avgEnc < ticks) {
-            avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()));
+            avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
             forward(speed);
         }
     }
@@ -236,6 +283,21 @@ public class HenrysAutonomous extends OpMode
         angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
     }
     
+    public float getTrueZAngle() {
+        float z = angles.thirdAngle;
+        if(z > 0) {
+            return z;
+        } else {
+            return (360 - Math.abs(z));    
+        }
+    }
+    
+    public float getReadZAngle() {
+        return angles.thirdAngle;
+    }
+    
+}
+
     public float getTrueZAngle() {
         float z = angles.thirdAngle;
         if(z > 0) {

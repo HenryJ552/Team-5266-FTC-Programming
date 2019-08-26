@@ -1,0 +1,248 @@
+package org.firstinspires.ftc.teamcode;
+
+//Installing needed libraries
+
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.robotcore.hardware.Gyroscope;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
+
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
+
+import org.firstinspires.ftc.robotcore.external.Func;
+import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
+
+import java.util.Locale;
+
+@Autonomous(name="HenrysAutonomous", group="Iterative Opmode")
+
+public class HenrysAutonomous extends OpMode
+{
+    //Primary IMU Setup
+    BNO055IMU imu;
+    Orientation angles;
+    Acceleration gravity;
+    
+    //Setting up variables for each component
+    private ElapsedTime runtime = new ElapsedTime();
+    private DcMotor leftMotor1 = null;
+    private DcMotor leftMotor2 = null;
+    private DcMotor rightMotor3 = null;
+    private DcMotor rightMotor4 = null;
+    
+    @Override
+    public void init() {
+        
+        //Telemetry Status
+        telemetry.addData("Status", "Initializing");
+
+        //IMU Init
+        imuInit();
+        
+        //Getting set configurations
+        leftMotor1 = hardwareMap.get(DcMotor.class, "left_Motor1");
+        leftMotor2 = hardwareMap.get(DcMotor.class, "left_Motor2");
+        rightMotor3 = hardwareMap.get(DcMotor.class, "right_Motor3");
+        rightMotor4 = hardwareMap.get(DcMotor.class, "right_Motor4");
+        
+        //Reversing the right side motors
+        leftMotor1.setDirection(DcMotor.Direction.FORWARD);
+        leftMotor2.setDirection(DcMotor.Direction.FORWARD);
+        rightMotor3.setDirection(DcMotor.Direction.REVERSE);
+        rightMotor4.setDirection(DcMotor.Direction.REVERSE);
+        
+        //Resetting Encoders
+        resetEncoders();
+        
+        //Telemetry Status
+        telemetry.addData("Status", "Initialization Complete");
+        
+    }
+
+    @Override
+    public void init_loop() {
+        
+    }
+
+    @Override
+    public void start() {
+        //Reset our elapsed time
+        runtime.reset();
+    }
+
+    @Override
+    public void loop() {
+        double leftMotor1Power;
+        double leftMotor2Power;
+        double rightMotor3Power;
+        double rightMotor4Power;
+        
+        ImuDrive(0.5,12,0.15);
+        ImuTurn(0.5,90);
+        ImuDrive(0.5,12,0.15);
+        ImuTurn(0.5,90);
+        ImuDrive(0.5,12,0.15);
+        ImuTurn(0.5,90);
+        ImuDrive(0.5,12,0.15);
+        ImuTurn(0.5,90);
+        
+        stop();
+    }
+
+    @Override
+    public void stop() {
+        stopMotors();
+    }
+    
+    //Method for robot to go forward a set distance at its current angle
+    public void ImuDrive(double speed, double distance, double p) {
+        
+        double ticks = distance * 89.12877;
+        resetEncoders();
+        
+        double avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()));
+        
+        getImuAngles();
+        double setAngle = getTrueZAngle(); 
+        double currentAng = getTrueZAngle();
+        while(avgEnc < ticks) {
+            getImuAngles();
+            currentAng = getTrueZAngle();
+            double correction = (setAngle - currentAng) * p; 
+            
+            avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()));
+            
+            setArcadeMotorPowers(speed,correction);
+        }
+    }
+    
+    public void ImuTurn(double speed, double angle) {
+        getImuAngles();
+        double currentAngle = getTrueZAngle();
+        double targetAngle = currentAngle + angle;
+        
+        if(angle > 0) {
+            while(currentAngle < targetAngle) {
+            getImuAngles();
+            currentAngle = getTrueZAngle();
+            turn(speed);
+            }
+            
+            while(currentAngle > targetAngle) {
+            getImuAngles();
+            currentAngle = getTrueZAngle();
+            turn(-speed/2);
+            }
+        } else {
+            while(currentAngle > targetAngle) {
+            getImuAngles();
+            currentAngle = getTrueZAngle();
+            turn(-speed);
+            }
+            
+            while(currentAngle < targetAngle) {
+            getImuAngles();
+            currentAngle = getTrueZAngle();
+            turn(speed/2);
+            }
+        }
+    }
+    
+    //Method for robot to go forward a set distance
+    public void encoderDrive(double speed, double distance) {
+        //1120 ticks per revoultion
+        //12.56637in per revolution using 4in wheel
+        //1in = 89.12677 ticks
+        
+        double ticks = distance * 89.12877;
+        resetEncoders();
+        
+        double avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()));
+        
+        while(avgEnc < ticks) {
+            avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()));
+            forward(speed);
+        }
+    }
+   
+    //Method to drive forward
+    public void forward(double speed) {
+        setArcadeMotorPowers(speed,0);    
+    }
+    
+    //Method to turn
+    public void turn(double turnSpeed) {
+        setArcadeMotorPowers(0,turnSpeed);
+    }
+    
+    //Method to set motor speed and turn
+    public void setArcadeMotorPowers(double speed, double turnSpeed) {
+        double drive = -speed;
+        double turnRate  =  turnSpeed;
+        
+        setRawMotorPowers(Range.clip(drive + turnRate, -1.0, 1.0),Range.clip(drive + turnRate, -1.0, 1.0),Range.clip(drive - turnRate, -1.0, 1.0),Range.clip(drive - turnRate, -1.0, 1.0));
+    }
+    
+    //Method to set motor speed
+    public void setRawMotorPowers(double m1, double m2, double m3, double m4) {
+        leftMotor1.setPower(m1);
+        leftMotor2.setPower(m2);
+        rightMotor3.setPower(m3);
+        rightMotor4.setPower(m4);    
+    }
+    
+    //Method to stop motors
+    public void stopMotors() {
+        setRawMotorPowers(0,0,0,0);   
+    }
+    
+    //Method to reset encoders
+    public void resetEncoders() {
+        leftMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftMotor1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        leftMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightMotor3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightMotor3.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightMotor4.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightMotor4.setMode(DcMotor.RunMode.RUN_USING_ENCODER);    
+    }
+    
+    public void imuInit() {
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
+        parameters.loggingEnabled = true;
+        parameters.loggingTag = "IMU";
+        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
+
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parameters);
+    }
+    
+    public void getImuAngles() {
+        angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+    }
+    
+    public float getTrueZAngle() {
+        float z = angles.thirdAngle;
+        if(z > 0) {
+            return z;
+        } else {
+            return (360 - Math.abs(z));    
+        }
+    }
+    
+}

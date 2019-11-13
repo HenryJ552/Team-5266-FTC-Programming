@@ -1,0 +1,195 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.CRServo;
+
+
+@TeleOp(name="SkyStone-DriverControl", group="Linear Opmode") // @Autonomous(...) is the other common choice
+
+public class SkystoneDriverControl extends LinearOpMode {
+ 
+ private DcMotor m1;
+ private DcMotor m2;
+ private DcMotor m3;
+ private DcMotor m4;
+ 
+ private DcMotor w1;
+ private DcMotor w2;
+ private CRServo w3;
+ private CRServo w4;
+ private CRServo w5;
+ private CRServo w6;
+ 
+ private DcMotor lm;
+ 
+ private Servo DS;
+ 
+ private Servo skystone_grabber;
+ private Servo skystone_grabber2;
+  
+ double RF; double LF; double RR; double LR;
+ double X1; double Y1; double X2; double Y2;
+ double joyScale = 1;
+ double motorMax = 1; 
+
+ @Override
+ public void runOpMode() {
+  
+ startup();
+ 
+ waitForStart();
+
+ while (opModeIsActive()) {
+ 
+  if (gamepad2.a) {
+   DS.setPosition(0.6);
+  }
+ 
+  if (gamepad2.b) {
+   DS.setPosition(0.13);
+  }
+ 
+  if (gamepad1.dpad_down) {
+   lm.setPower(1);
+  } else if (gamepad1.dpad_up) {
+   lm.setPower(-1);
+  } else {
+   lm.setPower(0);
+  }
+ 
+  if(gamepad2.left_trigger > 0.1) {
+   wheelsOut();
+  }
+ 
+  if(gamepad2.right_trigger > 0.1) {
+   wheelsIn();
+  }
+ 
+  if(gamepad2.x) {
+   wheelsOff();
+  }
+
+  mecanumDrive(gamepad1.right_stick_y * joyScale, gamepad1.right_stick_x * joyScale, gamepad1.left_stick_x * joyScale);
+  
+  }
+  
+ }
+ 
+ public void startup() {
+ telemetry.addData("Status", "Initializing");
+ telemetry.update();
+
+ m1 = hardwareMap.dcMotor.get("m1");
+ m2 = hardwareMap.dcMotor.get("m2");
+ m3 = hardwareMap.dcMotor.get("m3");
+ m4 = hardwareMap.dcMotor.get("m4");
+ 
+ w1 = hardwareMap.dcMotor.get("w1");
+ w2 = hardwareMap.dcMotor.get("w2");
+ w3 = hardwareMap.crservo.get("w3");
+ w4 = hardwareMap.crservo.get("w4");
+ w5 = hardwareMap.crservo.get("w5");
+ w6 = hardwareMap.crservo.get("w6");
+ 
+ lm = hardwareMap.dcMotor.get("lm");
+ DS = hardwareMap.servo.get("DS");
+ 
+ skystone_grabber = hardwareMap.servo.get("skystone_grabber");
+ skystone_grabber2 = hardwareMap.servo.get("skystone_grabber2");
+
+ m1.setDirection(DcMotor.Direction.FORWARD);
+ m2.setDirection(DcMotor.Direction.FORWARD);
+ m3.setDirection(DcMotor.Direction.REVERSE);
+ m4.setDirection(DcMotor.Direction.REVERSE);
+ 
+ raiseHook();
+ DS.setPosition(0.6);
+ 
+ telemetry.addData("Status", "Initialized");
+ telemetry.update();
+ }
+ 
+ public void mecanumDrive(double y1, double x1, double x2) {
+ LF = 0; RF = 0; LR = 0; RR = 0;
+ 
+ Y1 = y1;
+ X1 = x1;
+ Y2 = 0;
+ X2 = x2;
+
+ // Forward/back movement
+ LF += Y1; RF += Y1; LR += Y1; RR += Y1;
+
+ // Side to side movement
+ LF += X1; RF -= X1; LR -= X1; RR += X1;
+
+ // Rotation movement
+ LF += X2; RF -= X2; LR += X2; RR -= X2;
+
+ // Clip motor power values to +-motorMax
+ LF = Math.max(-motorMax, Math.min(LF, motorMax));
+ RF = Math.max(-motorMax, Math.min(RF, motorMax));
+ LR = Math.max(-motorMax, Math.min(LR, motorMax));
+ RR = Math.max(-motorMax, Math.min(RR, motorMax));
+
+ // Send values to the motors
+ setRawMotorPowers(LF,LR,RF,RR);
+
+ // Send some useful parameters to the driver station
+ telemetry.addData("LF", "%.3f", LF);
+ telemetry.addData("RF", "%.3f", RF);
+ telemetry.addData("LR", "%.3f", LR);
+ telemetry.addData("RR", "%.3f", RR);
+ 
+ telemetry.update();
+ }
+ 
+ public void setRawMotorPowers(double power1, double power2, double power3, double power4) {
+   m1.setPower(power1);
+   m2.setPower(power2);
+   m3.setPower(power3);
+   m4.setPower(power4);    
+ }
+ 
+ public  void wheelsIn() {
+   w1.setPower(-1);
+   w2.setPower(1);
+   w3.setPower(1);
+   w4.setPower(1);
+   w5.setPower(-1);
+   w6.setPower(-1);
+ }
+ 
+ public  void wheelsOut() {
+   w1.setPower(1);
+   w2.setPower(-1);
+   w3.setPower(-1);
+   w4.setPower(-1);
+   w5.setPower(1);
+   w6.setPower(1);
+ }
+ 
+ public  void wheelsOff() {
+   w1.setPower(0);
+   w2.setPower(0);
+   w3.setPower(0);
+   w4.setPower(0);
+   w5.setPower(0);
+   w6.setPower(0);
+ }
+ 
+ public void raiseHook() {
+   skystone_grabber.setPosition(1);
+   skystone_grabber2.setPosition(0);
+ }
+ 
+ public double exponential(double steepness, double current, double target, double total) {
+        return  Math.min(Math.max(Math.pow(steepness, -2 * Math.abs((target - current) / total)) * -1 + 1, 0.15), 1);
+    }
+}

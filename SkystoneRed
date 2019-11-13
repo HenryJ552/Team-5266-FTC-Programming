@@ -102,17 +102,16 @@ public class CleanSkystoneRed extends LinearOpMode {
         
         waitForStart();
         
-        if(opModeIsActive()) {   
-        
-            ImuDrive(-1,19,.1);
-            ImuTurn(1,-90,.15);
-            goToSkystone();
-            NewImuTurn(.5,0,0.15);
+        if(opModeIsActive()) { 
+            
+            PidDrive(25,0.15);
+            PidTurn(-90);
         
             double position = 1;
         
             if(checkSkystone()) {
-                position = -1;
+            position = -1;
+                goToSkystone();
                 lowerHook();
             } 
         
@@ -135,36 +134,66 @@ public class CleanSkystoneRed extends LinearOpMode {
         
             sleep(600);
         
-            strafeDrive(0.4,15);
+            strafeDrive(0.4,10);
         
-            NewImuTurn(.5,0,0.15);
-        
-            ImuDrive(-1,50,.1);
+            if(position == -1) {
+                PidDrive(28,0.15);
+            } else if(position == 0) {
+                PidDrive(36,0.15); 
+            } else {
+                PidDrive(44,0.15);
+            }
         
             raiseHook();
+            
+            PidDrive(-75,0.15);
         
-            ImuDrive(1,100,.1);
-        
+            goCloseToSkystone();
+            
+            if(position == -1) {
+                ImuDrive(-.7,14,.1);
+            } else if(position == 0) {
+                ImuDrive(-.7,6,.1);
+            } else {
+    
+            }
+            
             goToSkystone();
-        
-            if (position == -1) {
-                ImuDrive(-.7,14,.1);    
-            }
-        
-            if (position == 0) {
-                ImuDrive(-.7,6,.1);    
-            }
-        
             lowerHook();
        
             sleep(600);
-            strafeDrive(0.4,15);
+            
+            strafeDrive(0.4,10);
         
-            ImuDrive(-1,70,.1);
+            if(position == -1) {
+                PidDrive(53,0.15);
+            } else if(position == 0) {
+                PidDrive(62,0.15); 
+            } else {
+                PidDrive(71,0.15);
+            }
         
             raiseHook();
        
-            ImuDrive(0.3,20,.1);
+            if(position == -1) {
+                
+            } else {
+                PidDrive(-25,0.15);
+                
+                goToSkystone();
+                lowerHook();
+                
+                sleep(600);
+                
+                strafeDrive(0.4,10);
+                
+                PidDrive(25,0.15);
+                
+                
+            }
+            
+            raiseHook();
+            PidDrive(-9,0.15);
        
         }    
     }
@@ -262,7 +291,7 @@ public class CleanSkystoneRed extends LinearOpMode {
         stopMotors();
     }
     
-    public void PidDrive(double correctionRatio, double distance, double p) {
+    public void PidDrive(double distance, double p) {
         
         resetEncoders();
         
@@ -288,9 +317,9 @@ public class CleanSkystoneRed extends LinearOpMode {
                 avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
             
                 if (distance < 0) {
-                    setArcadeMotorPowers(exponential(70, avgEnc, distance, distance),-correction);
+                    setArcadeMotorPowers(exponential(5, avgEnc/89.12877, ticks, ticks),correction);
                 } else {
-                    setArcadeMotorPowers(-exponential(70, avgEnc, distance, distance),-correction);    
+                    setArcadeMotorPowers(-exponential(5, avgEnc/89.12877, distance, distance),-correction);    
                 }
             }
         } else {
@@ -310,9 +339,9 @@ public class CleanSkystoneRed extends LinearOpMode {
                 avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
             
                 if (distance < 0) {
-                    setArcadeMotorPowers(exponential(70, avgEnc, distance, distance),-correction);
+                    setArcadeMotorPowers(exponential(5, avgEnc/89.12877, ticks, ticks),correction);
                 } else {
-                    setArcadeMotorPowers(-exponential(70, avgEnc, distance, distance),-correction);    
+                    setArcadeMotorPowers(-exponential(5, avgEnc/89.12877, ticks, ticks),correction);    
                 }    
             }
         }
@@ -417,7 +446,7 @@ public class CleanSkystoneRed extends LinearOpMode {
         stopMotors();
     }
     
-    public void PidTurn(double correctionRatio, double angle) {
+    public void PidTurn(double angle) {
     
         double currentAngle = getReadZAngle();
         double targetAngle = 0;
@@ -434,12 +463,12 @@ public class CleanSkystoneRed extends LinearOpMode {
             if (angle < 0) {
                 while(currentAngle > targetAngle && opModeIsActive()) {
                     currentAngle = getReadZAngle();
-                    turn(-exponential(70, currentAngle, targetAngle, angle));
+                    turn(-exponential(5, currentAngle, targetAngle, angle));
                 }    
             } else {
                 while(currentAngle < targetAngle && opModeIsActive()) {
                     currentAngle = getReadZAngle();
-                    turn(exponential(70, currentAngle, targetAngle, angle));
+                    turn(exponential(5, currentAngle, targetAngle, angle));
                 }     
             }
         } else {
@@ -453,12 +482,12 @@ public class CleanSkystoneRed extends LinearOpMode {
             if (angle < 0) {
                 while(currentAngle > targetAngle && opModeIsActive()) {
                     currentAngle = getTrueZAngle();
-                    turn(-exponential(70, currentAngle, targetAngle, angle));
+                    turn(-exponential(5, currentAngle, targetAngle, angle));
                 }    
             } else {
                 while(currentAngle < targetAngle && opModeIsActive()) {
                     currentAngle = getTrueZAngle();
-                    turn(exponential(70, currentAngle, targetAngle, angle));
+                    turn(exponential(5, currentAngle, targetAngle, angle));
                 }     
             }
         }
@@ -775,10 +804,11 @@ public class CleanSkystoneRed extends LinearOpMode {
     
     public void raiseHook() {
         skystone_grabber2.setPosition(0);
+        skystone_grabber.setPosition(1);
     }
     
     public void lowerHook() {
-        skystone_grabber2.setPosition(.43);
+        skystone_grabber2.setPosition(.48);
     }
     
     public boolean checkSkystone() {
@@ -809,6 +839,22 @@ public class CleanSkystoneRed extends LinearOpMode {
         //    range = GetColorRange(); 
         //    setRawMotorPowers(.2,-.2,-.2,.2);
         //}
+        
+        setRawMotorPowers(0,0,0,0);
+    }
+    
+    public void goCloseToSkystone() {
+        double range = GetColorRange();
+        
+        while(!(range < 13) && opModeIsActive()){
+            range = GetColorRange(); 
+            setRawMotorPowers(-.6,.6,.6,-.6);
+        }
+        
+        while(!(range > 12)){
+            range = GetColorRange(); 
+            setRawMotorPowers(.37,-.37,-.37,.37);
+        }
         
         setRawMotorPowers(0,0,0,0);
     }

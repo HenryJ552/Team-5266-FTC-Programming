@@ -10,9 +10,9 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.CRServo;
 
 
-@TeleOp(name="SkyStone-DriverControl", group="Linear Opmode") // @Autonomous(...) is the other common choice
+@TeleOp(name="SkyStone-DriverControlExp", group="Linear Opmode") // @Autonomous(...) is the other common choice
 
-public class SkystoneDriverControl extends LinearOpMode {
+public class SkystoneDriverControlExp extends LinearOpMode {
  
  private DcMotor m1;
  private DcMotor m2;
@@ -37,6 +37,10 @@ public class SkystoneDriverControl extends LinearOpMode {
  double X1; double Y1; double X2; double Y2;
  double joyScale = 1;
  double motorMax = 1; 
+ 
+ double joyX1 = 0;
+ double joyY2 = 0;
+ double joyX2 = 0;
 
  @Override
  public void runOpMode() {
@@ -74,8 +78,32 @@ public class SkystoneDriverControl extends LinearOpMode {
   if(gamepad2.x) {
    wheelsOff();
   }
-
-  mecanumDrive(gamepad1.right_stick_y * joyScale, gamepad1.right_stick_x * joyScale, gamepad1.left_stick_x * joyScale);
+  
+  if(gamepad1.left_stick_x > 0.02) {
+   joyX1 =  Math.min(Math.max(-0.5 * Math.log(-(8.5 * gamepad1.left_stick_x - 10)) + 1.2, 0.05), 1);
+  } else if(gamepad1.left_stick_x < -0.02) {
+   joyX1 = - Math.min(Math.max(-0.5 * Math.log(-(8.5 * Math.abs(gamepad1.left_stick_x)  - 10)) + 1.2, 0.05), 1);
+  } else {
+   joyX1 = 0;
+  }
+  
+  if(gamepad1.right_stick_y > 0.02) {
+   joyY2 =  Math.min(Math.max(-0.5 * Math.log(-(8.5 * gamepad1.right_stick_y - 10)) + 1.2, 0.05), 1);
+  } else if(gamepad1.right_stick_y < -0.02) {
+   joyY2 = - Math.min(Math.max(-0.5 * Math.log(-(8.5 * Math.abs(gamepad1.right_stick_y)  - 10)) + 1.2, 0.05), 1);
+  } else {
+   joyY2 = 0;
+  }
+  
+  if(gamepad1.right_stick_x > 0.02) {
+   joyX2 =  Math.min(Math.max(-0.5 * Math.log(-(8.5 * gamepad1.right_stick_x - 10)) + 1.2, 0.05), 1);
+  } else if(gamepad1.right_stick_x < -0.02) {
+   joyX2 = - Math.min(Math.max(-0.5 * Math.log(-(8.5 * Math.abs(gamepad1.right_stick_x)  - 10)) + 1.2, 0.05), 1);
+  } else {
+   joyX2 = 0;
+  }
+  
+  mecanumDrive(joyY2, joyX2, joyX1);
   
   }
   
@@ -193,3 +221,4 @@ public class SkystoneDriverControl extends LinearOpMode {
         return  Math.min(Math.max(Math.pow(steepness, -2 * Math.abs((target - current) / total)) * -1 + 1, 0.15), 1);
     }
 }
+

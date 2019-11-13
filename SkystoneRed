@@ -71,10 +71,10 @@ public class CleanSkystoneRed extends LinearOpMode {
     //Setting up variables for each component
     private ElapsedTime runtime = new ElapsedTime();
     
-    private DcMotor leftMotor1 = null;
-    private DcMotor leftMotor2 = null;
-    private DcMotor rightMotor3 = null;
-    private DcMotor rightMotor4 = null;
+    private DcMotor m1;
+    private DcMotor m2;
+    private DcMotor m3;
+    private DcMotor m4;
     
     private DistanceSensor LRS;
     private DistanceSensor RRS;
@@ -207,10 +207,10 @@ public class CleanSkystoneRed extends LinearOpMode {
         imuInit();
         
         //Getting set configurations
-        leftMotor1 = hardwareMap.get(DcMotor.class, "m1");
-        leftMotor2 = hardwareMap.get(DcMotor.class, "m2");
-        rightMotor3 = hardwareMap.get(DcMotor.class, "m3");
-        rightMotor4 = hardwareMap.get(DcMotor.class, "m4");
+        m1 = hardwareMap.get(DcMotor.class, "m1");
+        m2 = hardwareMap.get(DcMotor.class, "m2");
+        m3 = hardwareMap.get(DcMotor.class, "m3");
+        m4 = hardwareMap.get(DcMotor.class, "m4");
         
         w1 = hardwareMap.dcMotor.get("w1");
         w2 = hardwareMap.dcMotor.get("w2");
@@ -231,15 +231,15 @@ public class CleanSkystoneRed extends LinearOpMode {
         
         
         //Reversing the right side motors
-        leftMotor1.setDirection(DcMotor.Direction.FORWARD);
-        leftMotor2.setDirection(DcMotor.Direction.FORWARD);
-        rightMotor3.setDirection(DcMotor.Direction.REVERSE);
-        rightMotor4.setDirection(DcMotor.Direction.REVERSE);
+        m1.setDirection(DcMotor.Direction.FORWARD);
+        m2.setDirection(DcMotor.Direction.FORWARD);
+        m3.setDirection(DcMotor.Direction.REVERSE);
+        m4.setDirection(DcMotor.Direction.REVERSE);
         
-        leftMotor1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        leftMotor2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightMotor3.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        rightMotor4.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        m1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        m2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        m3.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        m4.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         
         
         //Phone Servo Set
@@ -258,7 +258,7 @@ public class CleanSkystoneRed extends LinearOpMode {
         double ticks = distance * 89.12877;
         resetEncoders();
         
-        double avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
+        double avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
         
         getImuAngles();
         double rawAngle = getReadZAngle();
@@ -271,7 +271,7 @@ public class CleanSkystoneRed extends LinearOpMode {
                 currentAng = getReadZAngle();
                 double correction = currentAng * p; 
             
-                avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
+                avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
             
                 setArcadeMotorPowers(speed,-correction);
             }
@@ -283,7 +283,7 @@ public class CleanSkystoneRed extends LinearOpMode {
                 currentAng = getTrueZAngle();
                 double correction = (setAngle - currentAng) * p; 
             
-                avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
+                avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
             
                 setArcadeMotorPowers(speed,correction);    
             }
@@ -297,7 +297,7 @@ public class CleanSkystoneRed extends LinearOpMode {
         
         double ticks = Math.abs(distance * 89.12877);
         
-        double avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
+        double avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
         
         double setAngle = 0;
         
@@ -314,7 +314,7 @@ public class CleanSkystoneRed extends LinearOpMode {
                 currentAng = getReadZAngle();
                 double correction = currentAng * p; 
             
-                avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
+                avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
             
                 if (distance < 0) {
                     setArcadeMotorPowers(exponential(5, avgEnc/89.12877, ticks, ticks),correction);
@@ -336,7 +336,7 @@ public class CleanSkystoneRed extends LinearOpMode {
                 currentAng = getTrueZAngle();
                 double correction = (setAngle - currentAng) * p; 
             
-                avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
+                avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
             
                 if (distance < 0) {
                     setArcadeMotorPowers(exponential(5, avgEnc/89.12877, ticks, ticks),correction);
@@ -576,10 +576,10 @@ public class CleanSkystoneRed extends LinearOpMode {
         double ticks = distance * 89.12877;
         resetEncoders();
         
-        double avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
+        double avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
         
         while(avgEnc < ticks && opModeIsActive()) {
-            avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
+            avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
             forward(speed);
         }
         
@@ -595,10 +595,10 @@ public class CleanSkystoneRed extends LinearOpMode {
         double ticks = distance * 89.12877;
         resetEncoders();
         
-        double avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
+        double avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
         
         while(avgEnc < ticks && opModeIsActive()) {
-            avgEnc = (Math.abs(leftMotor1.getCurrentPosition()) + Math.abs(leftMotor2.getCurrentPosition()) + Math.abs(rightMotor3.getCurrentPosition()) + Math.abs(rightMotor4.getCurrentPosition()))/4;
+            avgEnc = avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
             
             if(speed > 0){
                 setRawMotorPowers(speed,-speed,-speed,speed);
@@ -631,11 +631,11 @@ public class CleanSkystoneRed extends LinearOpMode {
     }
     
     //Method to set motor speed
-    public void setRawMotorPowers(double m1, double m2, double m3, double m4) {
-        leftMotor1.setPower(m1);
-        leftMotor2.setPower(m2);
-        rightMotor3.setPower(m3);
-        rightMotor4.setPower(m4);    
+    public void setRawMotorPowers(double power1, double power2, double power3, double power4) {
+        m1.setPower(power1);
+        m2.setPower(power2);
+        m3.setPower(power3);
+        m4.setPower(power4);    
     }
     
     //Method to stop motors
@@ -645,14 +645,14 @@ public class CleanSkystoneRed extends LinearOpMode {
     
     //Method to reset encoders
     public void resetEncoders() {
-        leftMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        leftMotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        leftMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        leftMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        rightMotor3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        rightMotor3.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        rightMotor4.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        rightMotor4.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);    
+        m1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        m1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        m2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        m2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        m3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        m3.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        m4.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        m4.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);    
     }
     
     public void imuInit() {
@@ -688,30 +688,30 @@ public class CleanSkystoneRed extends LinearOpMode {
     }
     
     public  void wheelsIn() {
-        w5.setPower(-1);
-        w6.setPower(-1);
-        w3.setPower(1);
-        w4.setPower(1);
         w1.setPower(-1);
         w2.setPower(1);
+        w3.setPower(1);
+        w4.setPower(1);
+        w5.setPower(-1);
+        w6.setPower(-1);
     }
     
     public  void wheelsOut() {
-        w5.setPower(1);
-        w6.setPower(1);
-        w3.setPower(-1);
-        w4.setPower(-1);
         w1.setPower(1);
         w2.setPower(-1);
+        w3.setPower(-1);
+        w4.setPower(-1);
+        w5.setPower(1);
+        w6.setPower(1);
     }
     
     public  void wheelsOff() {
+        w1.setPower(0);
+        w2.setPower(0);
         w3.setPower(0);
         w4.setPower(0);
         w5.setPower(0);
         w6.setPower(0);
-        w1.setPower(0);
-        w2.setPower(0);
     }
     
     public void runToWall(double l1, double l2) {
@@ -730,72 +730,31 @@ public class CleanSkystoneRed extends LinearOpMode {
      
         
           if (Ldis > l1 + 6) {
-            leftMotor1.setPower(-Math.min(Math.max((Ldis - l1) / -45, -0.7), 0.7));
-            leftMotor2.setPower(-Math.min(Math.max((Ldis - l1) / -45, -0.7), 0.7));
+            m1.setPower(-Math.min(Math.max((Ldis - l1) / -45, -0.7), 0.7));
+            m2.setPower(-Math.min(Math.max((Ldis - l1) / -45, -0.7), 0.7));
           } else if(Ldis > l1) {
-            leftMotor1.setPower(-Math.min(Math.max((Ldis - l2) / -15, -0.7), 0.7));
-            leftMotor2.setPower(-Math.min(Math.max((Ldis - l2) / -15, -0.7), 0.7));    
+            m1.setPower(-Math.min(Math.max((Ldis - l2) / -15, -0.7), 0.7));
+            m2.setPower(-Math.min(Math.max((Ldis - l2) / -15, -0.7), 0.7));    
           }else if (Ldis < l2) {
-            leftMotor1.setPower(-0.15);
-            leftMotor2.setPower(-0.15);
+            m1.setPower(-0.15);
+            m2.setPower(-0.15);
           } else {
-            leftMotor1.setPower(0);
-            leftMotor2.setPower(0);
+            m1.setPower(0);
+            m2.setPower(0);
           }
           
           if (Rdis > l1 + 6) {
-            rightMotor3.setPower(-Math.min(Math.max((Rdis - l1) / -45, -0.7), 0.7));
-            rightMotor4.setPower(-Math.min(Math.max((Rdis - l1) / -45, -0.7), 0.7));
+            m3.setPower(-Math.min(Math.max((Rdis - l1) / -45, -0.7), 0.7));
+            m4.setPower(-Math.min(Math.max((Rdis - l1) / -45, -0.7), 0.7));
           } else if(Rdis > l1) {
-            rightMotor3.setPower(-Math.min(Math.max((Rdis - l2) / -15, -0.7), 0.7));
-            rightMotor4.setPower(-Math.min(Math.max((Rdis - l2) / -15, -0.7), 0.7));    
+            m3.setPower(-Math.min(Math.max((Rdis - l2) / -15, -0.7), 0.7));
+            m4.setPower(-Math.min(Math.max((Rdis - l2) / -15, -0.7), 0.7));    
           }else if (Rdis < l2) {
-            rightMotor3.setPower(-0.15);
-            rightMotor4.setPower(-0.15);
+            m3.setPower(-0.15);
+            m4.setPower(-0.15);
           } else {
-            rightMotor3.setPower(0);
-            rightMotor4.setPower(0);
-          }
-      
-        }
-        stopMotors();
-        while(Rdis > l1 || Ldis > l1 || Rdis < l2 || Ldis < l2 && opModeIsActive()) {
-            
-        Ldis = RRS.getDistance(DistanceUnit.CM);
-        Rdis = LRS.getDistance(DistanceUnit.CM);
-        
-        telemetry.addData("L", Ldis);
-        telemetry.addData("R", Rdis);
-        telemetry.update(); 
-        
-     
-        
-          if (Ldis > l1 + 6) {
-            leftMotor1.setPower(-Math.min(Math.max((Ldis - l1) / -45, -0.7), 0.7));
-            leftMotor2.setPower(-Math.min(Math.max((Ldis - l1) / -45, -0.7), 0.7));
-          } else if(Ldis > l1) {
-            leftMotor1.setPower(-Math.min(Math.max((Ldis - l2) / -15, -0.7), 0.7));
-            leftMotor2.setPower(-Math.min(Math.max((Ldis - l2) / -15, -0.7), 0.7));    
-          }else if (Ldis < l2) {
-            leftMotor1.setPower(-0.15);
-            leftMotor2.setPower(-0.15);
-          } else {
-            leftMotor1.setPower(0);
-            leftMotor2.setPower(0);
-          }
-          
-          if (Rdis > l1 + 6) {
-            rightMotor3.setPower(-Math.min(Math.max((Rdis - l1) / -45, -0.7), 0.7));
-            rightMotor4.setPower(-Math.min(Math.max((Rdis - l1) / -45, -0.7), 0.7));
-          } else if(Rdis > l1) {
-            rightMotor3.setPower(-Math.min(Math.max((Rdis - l2) / -15, -0.7), 0.7));
-            rightMotor4.setPower(-Math.min(Math.max((Rdis - l2) / -15, -0.7), 0.7));    
-          }else if (Rdis < l2) {
-            rightMotor3.setPower(-0.15);
-            rightMotor4.setPower(-0.15);
-          } else {
-            rightMotor3.setPower(0);
-            rightMotor4.setPower(0);
+            m3.setPower(0);
+            m4.setPower(0);
           }
       
         }

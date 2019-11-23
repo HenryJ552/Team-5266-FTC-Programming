@@ -12,7 +12,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 
 @TeleOp(name="SkyStone-DriverControlExp", group="Linear Opmode") // @Autonomous(...) is the other common choice
 
-public class SkystoneDriverControlExp extends LinearOpMode {
+public class SkystoneDriverControl extends LinearOpMode {
  
  private DcMotor m1;
  private DcMotor m2;
@@ -26,9 +26,14 @@ public class SkystoneDriverControlExp extends LinearOpMode {
  private CRServo w5;
  private CRServo w6;
  
+ private CRServo Delivery1;
+ private CRServo Delivery2;
+  
  private DcMotor lm;
  
  private Servo DS;
+ 
+ private Servo FG;
  
  private Servo skystone_grabber;
  private Servo skystone_grabber2;
@@ -77,6 +82,14 @@ public class SkystoneDriverControlExp extends LinearOpMode {
  
   if(gamepad2.x) {
    wheelsOff();
+  }
+  
+  if(gamepad1.x) {
+    FG.setPosition(0.9);
+  }
+  
+  if(gamepad1.y) {
+    FG.setPosition(0.5);
   }
   
   if(gamepad1.left_stick_x > 0.02) {
@@ -128,6 +141,11 @@ public class SkystoneDriverControlExp extends LinearOpMode {
  lm = hardwareMap.dcMotor.get("lm");
  DS = hardwareMap.servo.get("DS");
  
+ Delivery1 = hardwareMap.crservo.get("Delivery1");
+ Delivery2 = hardwareMap.crservo.get("Delivery2");
+ 
+ FG = hardwareMap.servo.get("FG");
+ 
  skystone_grabber = hardwareMap.servo.get("skystone_grabber");
  skystone_grabber2 = hardwareMap.servo.get("skystone_grabber2");
 
@@ -138,6 +156,7 @@ public class SkystoneDriverControlExp extends LinearOpMode {
  
  raiseHook();
  DS.setPosition(0.6);
+ FG.setPosition(0.5);
  
  telemetry.addData("Status", "Initialized");
  telemetry.update();
@@ -192,6 +211,8 @@ public class SkystoneDriverControlExp extends LinearOpMode {
    w4.setPower(1);
    w5.setPower(-1);
    w6.setPower(-1);
+   Delivery1.setPower(1);
+        Delivery2.setPower(-1);
  }
  
  public  void wheelsOut() {
@@ -201,6 +222,8 @@ public class SkystoneDriverControlExp extends LinearOpMode {
    w4.setPower(-1);
    w5.setPower(1);
    w6.setPower(1);
+   Delivery1.setPower(-1);
+        Delivery2.setPower(1);
  }
  
  public  void wheelsOff() {
@@ -210,6 +233,8 @@ public class SkystoneDriverControlExp extends LinearOpMode {
    w4.setPower(0);
    w5.setPower(0);
    w6.setPower(0);
+   Delivery1.setPower(0);
+        Delivery2.setPower(0);
  }
  
  public void raiseHook() {
@@ -221,4 +246,5 @@ public class SkystoneDriverControlExp extends LinearOpMode {
         return  Math.min(Math.max(Math.pow(steepness, -2 * Math.abs((target - current) / total)) * -1 + 1, 0.15), 1);
     }
 }
+
 

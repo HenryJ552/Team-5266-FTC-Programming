@@ -15,7 +15,6 @@ import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.Servo;
 
-
 //Rev Range
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -61,7 +60,7 @@ import java.util.Locale;
 
 @Autonomous
 
-public class CleanSkystoneRed extends LinearOpMode {
+public class SkystoneRed extends LinearOpMode {
     
     //Primary IMU Setup
     BNO055IMU imu;
@@ -93,6 +92,7 @@ public class CleanSkystoneRed extends LinearOpMode {
     private ColorSensor ColorSensor2;
     
     int state = 0;
+    int skystoneThreshold = 23;
     
     double globalCurrentAngle = 0;
 
@@ -137,7 +137,7 @@ public class CleanSkystoneRed extends LinearOpMode {
             strafeDrive(0.4,10);
         
             if(position == -1) {
-                PidDrive(28,0.15);
+                PidDrive(32,0.15);
             } else if(position == 0) {
                 PidDrive(36,0.15); 
             } else {
@@ -151,7 +151,7 @@ public class CleanSkystoneRed extends LinearOpMode {
             goCloseToSkystone();
             
             if(position == -1) {
-                ImuDrive(-.7,14,.1);
+                ImuDrive(-.7,15,.1);
             } else if(position == 0) {
                 ImuDrive(-.7,6,.1);
             } else {
@@ -176,9 +176,20 @@ public class CleanSkystoneRed extends LinearOpMode {
             raiseHook();
        
             if(position == -1) {
+            
+            } else if(position == 0) {
+                 PidDrive(-27,0.15);
                 
+                goToSkystone();
+                lowerHook();
+                
+                sleep(600);
+                
+                strafeDrive(0.4,10);  
+                
+                PidDrive(29,0.15);
             } else {
-                PidDrive(-25,0.15);
+                PidDrive(-29,0.15);
                 
                 goToSkystone();
                 lowerHook();
@@ -187,7 +198,7 @@ public class CleanSkystoneRed extends LinearOpMode {
                 
                 strafeDrive(0.4,10);
                 
-                PidDrive(25,0.15);
+                PidDrive(29,0.15);
                 
                 
             }
@@ -779,7 +790,7 @@ public class CleanSkystoneRed extends LinearOpMode {
             counter = counter + 1;
         }
         
-        if (alpha < 50) {
+        if (alpha < skystoneThreshold) {
             return true;
         } else {
             return false;

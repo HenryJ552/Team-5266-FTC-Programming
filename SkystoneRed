@@ -46,7 +46,859 @@ import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
 
+import java.util.ArrayList;package org.firstinspires.ftc.teamcode;
+
+//Installing needed libraries
+
+//Standard ftc libraries for running an opmode
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.Gyroscope;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.Servo;
+
+//Rev Range
+import com.qualcomm.robotcore.hardware.DistanceSensor;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cRangeSensor;
+
+//Rev Color
+import com.qualcomm.robotcore.hardware.ColorSensor;
+
+//IMU libraries
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
+
+import org.firstinspires.ftc.robotcore.external.Func;
+import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
+
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
+import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+
 import java.util.ArrayList;
+import java.util.List;
+
+import static org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES;
+import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.XYZ;
+import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.YZX;
+import static org.firstinspires.ftc.robotcore.external.navigation.AxesReference.EXTRINSIC;
+import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.BACK;
+
+
+import java.util.Locale;
+
+@Autonomous
+
+public class SkystoneRed extends LinearOpMode {
+    
+    //Primary IMU Setup
+    BNO055IMU imu;
+    Orientation angles;
+    Acceleration gravity;
+    
+    //Setting up variables for each component
+    private ElapsedTime runtime = new ElapsedTime();
+    
+    private DcMotor m1;
+    private DcMotor m2;
+    private DcMotor m3;
+    private DcMotor m4;
+    
+    private Servo FG1;
+    private Servo FG2;
+    
+    private DcMotor w1;
+    private DcMotor w2;
+    private CRServo w3;
+    private CRServo w4;
+    private CRServo w5;
+    private CRServo w6;
+    
+    private Servo skystone_grabber;
+    private Servo skystone_grabber2;
+    
+    private ColorSensor ColorSensor_REV_ColorRangeSensor;
+    private ColorSensor ColorSensor2;
+    
+    int state = 0;
+    int skystoneThreshold = 46;
+    
+    double leftThreshold = 1.8;
+    double rightThreshold = 1.6;
+    
+    double globalCurrentAngle = 0;
+
+    public void runOpMode() {
+        
+        startup();
+        
+        waitForStart();
+        
+        if(opModeIsActive()) { 
+            
+            //Align with stones
+            PidDrive(25.5,0.15);
+            PidTurn(-90);
+        
+            //Find correct skystone
+            double position = 1;
+        
+            if(confirmSkystone()) {
+            position = -1;
+                goToSkystone();
+                lowerHook();
+            } 
+        
+            if (position == 1) {
+                ImuDrive(.7,6,.1);
+                if(confirmSkystone()) {
+                    position = 0;
+                    goToSkystone();
+                    lowerHook();
+                } 
+            }
+        
+            if (position == 1) {
+                ImuDrive(.7,6,.1);
+                goToSkystone();
+                position = 1;
+            
+                lowerHook();
+            }
+        
+            sleep(600);
+        
+            //Move away from stones
+            strafeDrive(0.4,10);
+        
+            //Drive past bridge
+            if(position == -1) {
+                PidDrive(36,0.15);
+            } else if(position == 0) {
+                PidDrive(40,0.15); 
+            } else {
+                PidDrive(48,0.15);
+            }
+        
+            //Let go of skystone a square against back wall
+            raiseHook();
+            
+            PidDrive(-79,0.15);
+        
+            //Align with skystone 2
+            goCloseToSkystone();
+            
+            if(position == -1) {
+                ImuDrive(-.7,13.7,.1);
+            } else if(position == 0) {
+                ImuDrive(-.7,6,.1);
+            } else {
+    
+            }
+            
+            goToSkystone();
+            lowerHook();
+       
+            sleep(600);
+            
+            //Move away from stones
+            strafeDrive(0.4,10);
+        
+            //Drive past bridge
+            if(position == -1) {
+                PidDrive(57,0.15);
+            } else if(position == 0) {
+                PidDrive(66,0.15); 
+            } else {
+                PidDrive(75,0.15);
+            }
+        
+            raiseHook();
+       
+            //Try for third stone
+            //if(position == -1) {
+            
+            //} else if(position == 0) {
+            //     PidDrive(-31,0.15);
+                
+            //    goToSkystone();
+            //    lowerHook();
+                
+            //    sleep(600);
+                
+            //    strafeDrive(0.4,10);  
+                
+            //    PidDrive(33,0.15);
+            //} else {
+            //    PidDrive(-33,0.15);
+                
+            //    goToSkystone();
+            //    lowerHook();
+                
+            //    sleep(600);
+                
+            //    strafeDrive(0.4,10);
+                
+            //    PidDrive(33,0.15);
+                
+                
+            //}
+            
+            raiseHook();
+            
+             //Drive and align to foundation
+            
+            PidDrive(60,0.15);
+            
+            PidTurn(-90);
+            
+            PidDrive(-6,0.15);
+            
+            FG1.setPosition(.5);
+            FG2.setPosition(.5);
+            
+            PidDrive(8,0.15);
+            
+            PidTurn(-90);
+            
+            FG1.setPosition(.5);
+            FG2.setPosition(.5);
+            
+            sleep(300);
+            
+            PidDrive(-70,0.15);
+       
+        }    
+    }
+    
+    public void startup() {
+        //Telemetry Status
+        telemetry.addData("Status", "Initializing");
+        telemetry.update(); 
+
+        //IMU Init
+        imuInit();
+        
+        //Getting set configurations
+        m1 = hardwareMap.get(DcMotor.class, "m1");
+        m2 = hardwareMap.get(DcMotor.class, "m2");
+        m3 = hardwareMap.get(DcMotor.class, "m3");
+        m4 = hardwareMap.get(DcMotor.class, "m4");
+        
+        w1 = hardwareMap.dcMotor.get("w1");
+        w2 = hardwareMap.dcMotor.get("w2");
+        w3 = hardwareMap.crservo.get("w3");
+        w4 = hardwareMap.crservo.get("w4");
+        w5 = hardwareMap.crservo.get("w5");
+        w6 = hardwareMap.crservo.get("w6");
+        
+        skystone_grabber = hardwareMap.servo.get("skystone_grabber");
+        skystone_grabber2 = hardwareMap.servo.get("skystone_grabber2");
+        
+        ColorSensor_REV_ColorRangeSensor = hardwareMap.colorSensor.get("ColorSensor");
+        ColorSensor2 = hardwareMap.colorSensor.get("ColorSensor2");
+        
+        //Getting sensor configs
+        FG1 = hardwareMap.servo.get("FG1");
+        FG2 = hardwareMap.servo.get("FG2");
+        
+        
+        //Reversing the right side motors
+        m1.setDirection(DcMotor.Direction.FORWARD);
+        m2.setDirection(DcMotor.Direction.FORWARD);
+        m3.setDirection(DcMotor.Direction.REVERSE);
+        m4.setDirection(DcMotor.Direction.REVERSE);
+        
+        m1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        m2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        m3.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        m4.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        
+        FG1.setPosition(1);
+        FG2.setPosition(1);
+        
+        //Phone Servo Set
+        raiseHook();
+        
+        //Resetting Encoders
+        resetEncoders();
+        
+        telemetry.addData("Status", "Initialized");
+        telemetry.update(); 
+    }
+    
+    //Method for robot to go forward a set distance at its current angle
+    public void ImuDrive(double speed, double distance, double p) {
+        
+        double ticks = distance * 89.12877;
+        resetEncoders();
+        
+        double avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
+        
+        getImuAngles();
+        double rawAngle = getReadZAngle();
+        
+        if(Math.abs(rawAngle) < 10) { 
+            double setAngle = getReadZAngle(); 
+            double currentAng = getReadZAngle();
+            while(avgEnc < ticks && opModeIsActive()) {
+                getImuAngles();
+                currentAng = getReadZAngle();
+                double correction = currentAng * p; 
+            
+                avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
+            
+                setArcadeMotorPowers(speed,-correction);
+            }
+        } else {
+            double setAngle = getTrueZAngle(); 
+            double currentAng = getTrueZAngle();
+            while(avgEnc < ticks && opModeIsActive()) {
+                getImuAngles();
+                currentAng = getTrueZAngle();
+                double correction = (setAngle - currentAng) * p; 
+            
+                avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
+            
+                setArcadeMotorPowers(speed,correction);    
+            }
+        }
+        stopMotors();
+    }
+    
+    public void PidDrive(double distance, double p) {
+        
+        resetEncoders();
+        
+        double ticks = Math.abs(distance * 89.12877);
+        
+        double avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
+        
+        double setAngle = 0;
+        
+        getImuAngles();
+        
+        double rawAngle = getReadZAngle();
+        
+        if(Math.abs(rawAngle) < 10) { 
+            setAngle = globalCurrentAngle; 
+            double currentAng = getReadZAngle();
+            
+            while(avgEnc < ticks && opModeIsActive()) {
+                getImuAngles();
+                currentAng = getReadZAngle();
+                double correction = currentAng * p; 
+            
+                avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
+            
+                if (distance < 0) {
+                    setArcadeMotorPowers(exponential(5, avgEnc/89.12877, ticks, ticks),correction);
+                } else {
+                    setArcadeMotorPowers(-exponential(5, avgEnc/89.12877, distance, distance),-correction);    
+                }
+            }
+        } else {
+            
+            if(globalCurrentAngle < 0) {
+                setAngle = 360 - Math.abs(globalCurrentAngle);
+            } else {
+                setAngle = globalCurrentAngle;    
+            }
+            
+            double currentAng = getTrueZAngle();
+            while(avgEnc < ticks && opModeIsActive()) {
+                getImuAngles();
+                currentAng = getTrueZAngle();
+                double correction = (setAngle - currentAng) * p; 
+            
+                avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
+            
+                if (distance < 0) {
+                    setArcadeMotorPowers(exponential(5, avgEnc/89.12877, ticks, ticks),correction);
+                } else {
+                    setArcadeMotorPowers(-exponential(5, avgEnc/89.12877, ticks, ticks),correction);    
+                }    
+            }
+        }
+        stopMotors();
+    }
+    
+    public void ImuTurn(double speed, double angle, double correction) {
+        getImuAngles();
+        
+        double currentAngle = getTrueZAngle();
+        globalCurrentAngle = globalCurrentAngle + angle;
+        if(globalCurrentAngle > 360) {
+            globalCurrentAngle = 0;
+        }
+        double targetAngle = globalCurrentAngle;
+        
+        if(angle >= 0 && targetAngle >= 0 && targetAngle < 170) {
+            currentAngle = getReadZAngle();
+            while(currentAngle <= targetAngle && opModeIsActive()) {
+                currentAngle = getReadZAngle();
+                turn(speed);
+            }
+            stopMotors();
+            currentAngle = getTrueZAngle();
+            while(currentAngle > targetAngle && opModeIsActive()) { 
+                currentAngle = getReadZAngle();
+                turn(-correction);
+            }
+            
+        }else if(angle < 0 && targetAngle <= 0 && targetAngle > -170) {
+            currentAngle = getReadZAngle();
+            while(currentAngle > targetAngle && opModeIsActive()) {
+                currentAngle = getReadZAngle();
+                turn(-speed);
+            }
+            stopMotors();
+            while(currentAngle < targetAngle && opModeIsActive()) {
+                currentAngle = getReadZAngle();
+                turn(correction);
+            }
+        }else if(angle > 0 && targetAngle >= 0 && targetAngle > 170 && targetAngle < 350) {
+            currentAngle = getTrueZAngle();
+            while(currentAngle <= targetAngle && opModeIsActive()) {
+                currentAngle = getTrueZAngle();
+                turn(speed);
+            }
+            stopMotors();
+            currentAngle = getTrueZAngle();
+            while(currentAngle > targetAngle && opModeIsActive()) { 
+                currentAngle = getTrueZAngle();
+                turn(-correction);
+            }
+        
+        
+        }else if(angle < 0 && targetAngle < -170 && targetAngle > -350) {
+            currentAngle = getTrueZAngle();
+            targetAngle = 360 - Math.abs(targetAngle);
+            while(currentAngle > targetAngle && opModeIsActive()) {
+                getImuAngles();
+                currentAngle = getTrueZAngle();
+                turn(-speed);
+            }
+            stopMotors();
+            while(currentAngle < targetAngle && opModeIsActive()) {
+                getImuAngles();
+                currentAngle = getTrueZAngle();
+                turn(correction);
+            }
+        } else if(targetAngle <= -180) {
+            getImuAngles();
+            currentAngle = getTrueZAngle();
+            
+            while(currentAngle > -targetAngle && opModeIsActive()) {
+                getImuAngles();
+                currentAngle = getTrueZAngle();
+                turn(-speed);
+            }
+            stopMotors();
+            while(currentAngle < -targetAngle && opModeIsActive()) {
+                getImuAngles();
+                currentAngle = getTrueZAngle();
+                turn(correction);
+            } 
+            
+        } else {
+            getImuAngles();
+            currentAngle = getReadZAngle();
+            targetAngle = targetAngle - 360;
+            
+            while(currentAngle < targetAngle && opModeIsActive()) {
+                getImuAngles();
+                currentAngle = getReadZAngle();
+                turn(speed);
+            }
+            stopMotors();
+            while(currentAngle > targetAngle && opModeIsActive()) {
+                getImuAngles();
+                currentAngle = getReadZAngle();
+                turn(-correction);
+            }
+        }
+        stopMotors();
+    }
+    
+    public void PidTurn(double angle) {
+    
+        double currentAngle = getReadZAngle();
+        double targetAngle = 0;
+        
+        globalCurrentAngle = globalCurrentAngle + angle;
+        if(globalCurrentAngle > 360) {
+            globalCurrentAngle = 0;
+        }
+        
+        if(Math.abs(currentAngle) < 150 && Math.abs(globalCurrentAngle) < 150) {
+            targetAngle = globalCurrentAngle;   
+            currentAngle = getReadZAngle();
+            
+            if (angle < 0) {
+                while(currentAngle > targetAngle && opModeIsActive()) {
+                    currentAngle = getReadZAngle();
+                    turn(-exponential(5, currentAngle, targetAngle, angle));
+                }    
+            } else {
+                while(currentAngle < targetAngle && opModeIsActive()) {
+                    currentAngle = getReadZAngle();
+                    turn(exponential(5, currentAngle, targetAngle, angle));
+                }     
+            }
+        } else {
+            if(globalCurrentAngle < 0) {
+                targetAngle = 360 - Math.abs(globalCurrentAngle);
+            } else {
+                targetAngle = globalCurrentAngle;    
+            }
+            currentAngle = getTrueZAngle();
+            
+            if (angle < 0) {
+                while(currentAngle > targetAngle && opModeIsActive()) {
+                    currentAngle = getTrueZAngle();
+                    turn(-exponential(5, currentAngle, targetAngle, angle));
+                }    
+            } else {
+                while(currentAngle < targetAngle && opModeIsActive()) {
+                    currentAngle = getTrueZAngle();
+                    turn(exponential(5, currentAngle, targetAngle, angle));
+                }     
+            }
+        }
+        
+        stopMotors();
+    }
+    
+    public void NewImuTurn(double speed, double angle, double correction) {
+        getImuAngles();
+        
+        double currentAngle = getTrueZAngle();
+        globalCurrentAngle = globalCurrentAngle + angle;
+        if(globalCurrentAngle > 360) {
+            globalCurrentAngle = 0;
+        }
+        double targetAngle = globalCurrentAngle;
+        if(globalCurrentAngle > 30 && Math.abs(targetAngle) > 100 && targetAngle < 330 ) {
+            if(angle >= 0) {
+                currentAngle = getTrueZAngle();
+                while(currentAngle <= targetAngle && opModeIsActive()) {
+                    currentAngle = getTrueZAngle();
+                    turn(speed);
+                }
+                
+                currentAngle = getTrueZAngle();
+                while(currentAngle > targetAngle && opModeIsActive()) { 
+                    currentAngle = getTrueZAngle();
+                    turn(-correction);
+                }
+                
+            } 
+        
+            if(angle < 0) {
+                currentAngle = getTrueZAngle();
+                while(currentAngle > targetAngle && opModeIsActive()) {
+                    currentAngle = getTrueZAngle();
+                    turn(-speed);
+                }
+                
+                while(currentAngle < targetAngle && opModeIsActive()) {
+                    currentAngle = getTrueZAngle();
+                    turn(correction);
+                }
+            }
+        } else {
+            targetAngle = getReadZAngle() + angle;
+            if(angle >= 0) {
+                currentAngle = getReadZAngle();
+                while(currentAngle <= targetAngle && opModeIsActive()) {
+                    currentAngle = getReadZAngle();
+                    turn(speed);
+                }
+                
+                currentAngle = getReadZAngle();
+                while(currentAngle > targetAngle && opModeIsActive()) { 
+                    currentAngle = getReadZAngle();
+                    turn(-correction);
+                }
+                
+            } 
+        
+            if(angle < 0) {
+                currentAngle = getReadZAngle();
+                while(currentAngle > targetAngle && opModeIsActive()) {
+                    currentAngle = getReadZAngle();
+                    turn(-speed);
+                }
+                
+                while(currentAngle < targetAngle && opModeIsActive()) {
+                    currentAngle = getTrueZAngle();
+                    turn(correction);
+                }
+            }
+            
+        }
+        
+        stopMotors();
+    }
+    
+    //Method for robot to go forward a set distance
+    public void encoderDrive(double speed, double distance) {
+        //1120 ticks per revoultion
+        //12.56637in per revolution using 4in wheel
+        //1in = 89.12677 ticks
+        
+        double ticks = distance * 89.12877;
+        resetEncoders();
+        
+        double avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
+        
+        while(avgEnc < ticks && opModeIsActive()) {
+            avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
+            forward(speed);
+        }
+        
+        stopMotors();
+    }
+   
+    //Method for robot to go forward a set distance
+    public void strafeDrive(double speed, double distance) {
+        //1120 ticks per revoultion
+        //12.56637in per revolution using 4in wheel
+        //1in = 89.12677 ticks
+        
+        double ticks = distance * 89.12877;
+        resetEncoders();
+        
+        double avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
+        
+        while(avgEnc < ticks && opModeIsActive()) {
+            avgEnc = avgEnc = (Math.abs(m1.getCurrentPosition()) + Math.abs(m2.getCurrentPosition()) + Math.abs(m3.getCurrentPosition()) + Math.abs(m4.getCurrentPosition()))/4;
+            
+            if(speed > 0){
+                setRawMotorPowers(speed,-speed,-speed,speed);
+            }
+            
+            if(speed < 0){
+                setRawMotorPowers(speed,-speed,-speed,speed);
+            }
+        }
+        
+        stopMotors();
+    }
+    
+    //Method to drive forward
+    public void forward(double speed) {
+        setArcadeMotorPowers(speed,0);    
+    }
+    
+    //Method to turn
+    public void turn(double turnSpeed) {
+        setArcadeMotorPowers(0,turnSpeed);
+    }
+    
+    //Method to set motor speed and turn
+    public void setArcadeMotorPowers(double speed, double turnSpeed) {
+        double drive = speed;
+        double turnRate  =  -turnSpeed;
+        
+        setRawMotorPowers(Range.clip(drive + turnRate, -1.0, 1.0),Range.clip(drive + turnRate, -1.0, 1.0),Range.clip(drive - turnRate, -1.0, 1.0),Range.clip(drive - turnRate, -1.0, 1.0));
+    }
+    
+    //Method to set motor speed
+    public void setRawMotorPowers(double power1, double power2, double power3, double power4) {
+        m1.setPower(power1);
+        m2.setPower(power2);
+        m3.setPower(power3);
+        m4.setPower(power4);    
+    }
+    
+    //Method to stop motors
+    public void stopMotors() {
+        setRawMotorPowers(0,0,0,0);   
+    }
+    
+    //Method to reset encoders
+    public void resetEncoders() {
+        m1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        m1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        m2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        m2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        m3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        m3.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        m4.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        m4.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);    
+    }
+    
+    public void imuInit() {
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
+        parameters.loggingEnabled = true;
+        parameters.loggingTag = "IMU";
+        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
+
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parameters);
+    }
+    
+    public void getImuAngles() {
+        angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+    }
+    
+    public double getTrueZAngle() {
+        getImuAngles();
+        double z = angles.firstAngle;
+        if(z >= 0) {
+            return z;
+        } else {
+            return (360 - Math.abs(z));    
+        }
+    }
+    
+    public float getReadZAngle() {
+        getImuAngles();
+        return angles.firstAngle;
+    }
+    
+    public  void wheelsIn() {
+        w1.setPower(-1);
+        w2.setPower(1);
+        w3.setPower(1);
+        w4.setPower(1);
+        w5.setPower(-1);
+        w6.setPower(-1);
+    }
+    
+    public  void wheelsOut() {
+        w1.setPower(1);
+        w2.setPower(-1);
+        w3.setPower(-1);
+        w4.setPower(-1);
+        w5.setPower(1);
+        w6.setPower(1);
+    }
+    
+    public  void wheelsOff() {
+        w1.setPower(0);
+        w2.setPower(0);
+        w3.setPower(0);
+        w4.setPower(0);
+        w5.setPower(0);
+        w6.setPower(0);
+    }
+    
+    public void raiseHook() {
+        skystone_grabber2.setPosition(0);
+        skystone_grabber.setPosition(1);
+    }
+    
+    public void lowerHook() {
+        skystone_grabber2.setPosition(0.43);
+    }
+    
+    public boolean checkSkystone() {
+        double counter = 0;
+        double alpha = ColorSensor2.alpha();
+        
+        while(counter < 50 && opModeIsActive()) {
+            alpha = ColorSensor2.alpha(); 
+            counter = counter + 1;
+        }
+        
+        if (alpha < skystoneThreshold) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    public void goToSkystone() {
+        double range = GetColorRange();
+        
+        while(!(range < 7) && opModeIsActive()){
+            range = GetColorRange(); 
+            setRawMotorPowers(-.37,.37,.37,-.37);
+        }
+        
+        //while(!(range > 7.5)){
+        //    range = GetColorRange(); 
+        //    setRawMotorPowers(.2,-.2,-.2,.2);
+        //}
+        
+        setRawMotorPowers(0,0,0,0);
+    }
+    
+    public void goCloseToSkystone() {
+        double range = GetColorRange();
+        
+        while(!(range < 13) && opModeIsActive()){
+            range = GetColorRange(); 
+            setRawMotorPowers(-.6,.6,.6,-.6);
+        }
+        
+        while(!(range > 12) && opModeIsActive()){
+            range = GetColorRange(); 
+            setRawMotorPowers(.37,-.37,-.37,.37);
+        }
+        
+        setRawMotorPowers(0,0,0,0);
+    }
+    
+    public boolean confirmSkystone() {
+        double counter = 0;
+        double leftSkystoneRatio = getLeftColorRatio();
+        
+        while(counter < 50 && opModeIsActive()) {
+            leftSkystoneRatio = getLeftColorRatio();
+            counter = counter + 1;
+        }
+        
+        if (leftSkystoneRatio < leftThreshold) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    public double GetColorRange(){
+        return ((DistanceSensor) ColorSensor2).getDistance(DistanceUnit.CM); 
+    }
+    
+    public double getRightColorRatio() {
+        return  ColorSensor_REV_ColorRangeSensor.red() / ColorSensor_REV_ColorRangeSensor.blue();
+    }
+    
+    public double getLeftColorRatio() {
+        return  ColorSensor2.red() / ColorSensor2.blue();
+    }
+    
+    public double exponential(double steepness, double current, double target, double total) {
+        return  Math.min(Math.max(Math.pow(steepness, -2 * Math.abs((target - current) / total)) * -1 + 1, 0.15), 1);
+    }
+    
+}
+        
 import java.util.List;
 
 import static org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES;

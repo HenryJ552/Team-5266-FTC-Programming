@@ -1,3 +1,52 @@
+package org.firstinspires.ftc.teamcode;
+
+//Installing needed libraries
+
+//Standard ftc libraries for running an opmode
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.Gyroscope;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.Servo;
+
+//Rev Range
+import com.qualcomm.robotcore.hardware.DistanceSensor;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cRangeSensor;
+
+//Rev Color
+import com.qualcomm.robotcore.hardware.ColorSensor;
+
+//IMU libraries
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
+
+import org.firstinspires.ftc.robotcore.external.Func;
+import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
+
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
+import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES;
@@ -26,8 +75,8 @@ public class SkystoneBlue extends LinearOpMode {
     private DcMotor m3;
     private DcMotor m4;
     
-    private DistanceSensor LRS;
-    private DistanceSensor RRS;
+    private Servo FG1;
+    private Servo FG2;
     
     private DcMotor w1;
     private DcMotor w2;
@@ -43,7 +92,11 @@ public class SkystoneBlue extends LinearOpMode {
     private ColorSensor ColorSensor2;
     
     int state = 0;
-    int skystoneThreshold = 23;
+    
+    int skystoneThreshold = 76;
+    
+    double leftThreshold = 1.8;
+    double rightThreshold = 1.6;
     
     double globalCurrentAngle = 0;
 
@@ -55,26 +108,30 @@ public class SkystoneBlue extends LinearOpMode {
         
         if(opModeIsActive()) { 
             
-            PidDrive(25.5,0.15);
+            //Line up with skystones
+            PidDrive(26,0.15);
             PidTurn(90);
         
+            //Check the first stone
             double position = 1;
         
-            if(checkSkystone()) {
+            if(confirmSkystone()) {
                 position = -1;
                 goToSkystone();
                 lowerHook();
             } 
         
+            //Check the second stone unless already found
             if (position == 1) {
                 ImuDrive(.7,6.5,.1);
-                if(checkSkystone()) {
+                if(confirmSkystone()) {
                     position = 0;
                     goToSkystone();
                     lowerHook();
                 } 
             }
         
+            //Drive to last stone
             if (position == 1) {
                 ImuDrive(.7,6,.1);
                 goToSkystone();
@@ -85,24 +142,29 @@ public class SkystoneBlue extends LinearOpMode {
         
             sleep(600);
         
+            //Drag block out of quarry
             strafeDrive(-0.4,12.5);
         
+            //Drive past bridge
             if(position == -1) {
-                PidDrive(32,0.15);
+                PidDrive(36,0.15);
             } else if(position == 0) {
-                PidDrive(41,0.15); 
+                PidDrive(45,0.15); 
             } else {
-                PidDrive(49,0.15);
+                PidDrive(53,0.15);
             }
         
+            //Let go of block and ram into wall
             raiseHook();
             
-            PidDrive(-75,0.15);
+            PidDrive(-79,0.15);
         
+            //Drive towards stones and square against wall
             goCloseToSkystone();
             
             ImuDrive(.7,3,.1);
             
+            //Drive to the correct block
             if(position == -1) {
                 ImuDrive(-.7,15,.1);
             } else if(position == 0) {
@@ -111,6 +173,7 @@ public class SkystoneBlue extends LinearOpMode {
     
             }
             
+            //Grab block and drag it out
             goToSkystone();
             lowerHook();
        
@@ -118,46 +181,69 @@ public class SkystoneBlue extends LinearOpMode {
             
             strafeDrive(-0.4,12);
         
+            //Drive past bridge
             if(position == -1) {
-                PidDrive(55,0.15);
+                PidDrive(59,0.15);
             } else if(position == 0) {
-                PidDrive(62,0.15); 
+                PidDrive(66,0.15); 
             } else {
-                PidDrive(71,0.15);
+                PidDrive(75,0.15);
             }
         
+            //Let go of block and try for a third block
             raiseHook();
        
-            if(position == -1) {
+            //if(position == -1) {
             
-            } else if(position == 1) {
-                PidDrive(-30,0.15);
+            //} else if(position == 1) {
+            //    PidDrive(-34,0.15);
+            //    
+            //    goToSkystone();
+            //    lowerHook();
                 
-                goToSkystone();
-                lowerHook();
+            //    sleep(600);
                 
-                sleep(600);
+            //    strafeDrive(-0.4,12);
                 
-                strafeDrive(-0.4,12);
+            //    PidDrive(35,0.15);
+            //} else {
+            //    PidDrive(-32.5,0.15);
                 
-                PidDrive(33,0.15);
-            } else {
-                PidDrive(-28.5,0.15);
+            //    goToSkystone();
+            //    lowerHook();
                 
-                goToSkystone();
-                lowerHook();
+            //    sleep(600);
                 
-                sleep(600);
+            //    strafeDrive(-0.4,12);
                 
-                strafeDrive(-0.4,12);
-                
-                PidDrive(34,0.15);
+            //    PidDrive(36,0.15);
                 
                 
-            }
+            //}
             
             raiseHook();
-            PidDrive(-9,0.15);
+            
+            //Drive and align to foundation
+            
+            PidDrive(60,0.15);
+            
+            PidTurn(90);
+            
+            PidDrive(-6,0.15);
+            
+            FG1.setPosition(.5);
+            FG2.setPosition(.5);
+            
+            PidDrive(8,0.15);
+            
+            PidTurn(90);
+            
+            FG1.setPosition(.5);
+            FG2.setPosition(.5);
+            
+            sleep(300);
+            
+            PidDrive(-70,0.15);
        
         }    
     }
@@ -189,10 +275,8 @@ public class SkystoneBlue extends LinearOpMode {
         ColorSensor_REV_ColorRangeSensor = hardwareMap.colorSensor.get("ColorSensor");
         ColorSensor2 = hardwareMap.colorSensor.get("ColorSensor2");
         
-        //Getting sensor configs
-        LRS = hardwareMap.get(DistanceSensor.class, "LRS");
-        RRS = hardwareMap.get(DistanceSensor.class, "RRS");
-        
+        FG1 = hardwareMap.servo.get("FG1");
+        FG2 = hardwareMap.servo.get("FG2");
         
         //Reversing the right side motors
         m1.setDirection(DcMotor.Direction.FORWARD);
@@ -205,7 +289,9 @@ public class SkystoneBlue extends LinearOpMode {
         m3.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         m4.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         
-        
+        FG1.setPosition(1);
+        FG2.setPosition(1);
+ 
         //Phone Servo Set
         raiseHook();
         
@@ -678,53 +764,6 @@ public class SkystoneBlue extends LinearOpMode {
         w6.setPower(0);
     }
     
-    public void runToWall(double l1, double l2) {
-        double Ldis = RRS.getDistance(DistanceUnit.CM);
-        double Rdis = LRS.getDistance(DistanceUnit.CM);
-        
-        while(Rdis > l1 || Ldis > l1 || Rdis < l2 || Ldis < l2 && opModeIsActive()) {
-            
-        Ldis = RRS.getDistance(DistanceUnit.CM);
-        Rdis = LRS.getDistance(DistanceUnit.CM);
-        
-        telemetry.addData("L", Ldis);
-        telemetry.addData("R", Rdis);
-        telemetry.update(); 
-        
-     
-        
-          if (Ldis > l1 + 6) {
-            m1.setPower(-Math.min(Math.max((Ldis - l1) / -45, -0.7), 0.7));
-            m2.setPower(-Math.min(Math.max((Ldis - l1) / -45, -0.7), 0.7));
-          } else if(Ldis > l1) {
-            m1.setPower(-Math.min(Math.max((Ldis - l2) / -15, -0.7), 0.7));
-            m2.setPower(-Math.min(Math.max((Ldis - l2) / -15, -0.7), 0.7));    
-          }else if (Ldis < l2) {
-            m1.setPower(-0.15);
-            m2.setPower(-0.15);
-          } else {
-            m1.setPower(0);
-            m2.setPower(0);
-          }
-          
-          if (Rdis > l1 + 6) {
-            m3.setPower(-Math.min(Math.max((Rdis - l1) / -45, -0.7), 0.7));
-            m4.setPower(-Math.min(Math.max((Rdis - l1) / -45, -0.7), 0.7));
-          } else if(Rdis > l1) {
-            m3.setPower(-Math.min(Math.max((Rdis - l2) / -15, -0.7), 0.7));
-            m4.setPower(-Math.min(Math.max((Rdis - l2) / -15, -0.7), 0.7));    
-          }else if (Rdis < l2) {
-            m3.setPower(-0.15);
-            m4.setPower(-0.15);
-          } else {
-            m3.setPower(0);
-            m4.setPower(0);
-          }
-      
-        }
-        stopMotors();
-    }
-    
     public void raiseHook() {
         skystone_grabber2.setPosition(0);
         skystone_grabber.setPosition(1);
@@ -744,6 +783,22 @@ public class SkystoneBlue extends LinearOpMode {
         }
         
         if (alpha < skystoneThreshold) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    public boolean confirmSkystone() {
+        double counter = 0;
+        double rightSkystoneRatio = getRightColorRatio();
+        
+        while(counter < 50 && opModeIsActive()) {
+            rightSkystoneRatio = getRightColorRatio();
+            counter = counter + 1;
+        }
+        
+        if (rightSkystoneRatio < rightThreshold) {
             return true;
         } else {
             return false;
@@ -786,8 +841,17 @@ public class SkystoneBlue extends LinearOpMode {
         return ((DistanceSensor) ColorSensor_REV_ColorRangeSensor).getDistance(DistanceUnit.CM); 
     }
     
+    public double getRightColorRatio() {
+        return  ColorSensor_REV_ColorRangeSensor.red() / ColorSensor_REV_ColorRangeSensor.blue();
+    }
+    
+    public double getLeftColorRatio() {
+        return  ColorSensor2.red() / ColorSensor2.blue();
+    }
+    
     public double exponential(double steepness, double current, double target, double total) {
         return  Math.min(Math.max(Math.pow(steepness, -2 * Math.abs((target - current) / total)) * -1 + 1, 0.15), 1);
     }
     
 }
+

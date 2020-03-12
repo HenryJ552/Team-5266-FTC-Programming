@@ -60,7 +60,7 @@ import java.util.Locale;
 
 @Autonomous
 
-public class SkystoneBlue extends LinearOpMode {
+public class State_Blue extends LinearOpMode {
     
     //Primary IMU Setup
     BNO055IMU imu;
@@ -80,24 +80,31 @@ public class SkystoneBlue extends LinearOpMode {
     
     private DcMotor w1;
     private DcMotor w2;
-    private CRServo w3;
+    //private CRServo w3;
     private CRServo w4;
     private CRServo w5;
     private CRServo w6;
     
     private Servo skystone_grabber;
+    private Servo GGSR;
     private Servo skystone_grabber2;
+    private Servo GGSL;
+    
+    //private Servo skystone_grabber2;
     
     private ColorSensor ColorSensor_REV_ColorRangeSensor;
     private ColorSensor ColorSensor2;
     
     int state = 0;
     
+    //Old threshold
     int skystoneThreshold = 76;
     
-    double leftThreshold = 1.8;
-    double rightThreshold = 1.6;
+    //New threshold
+    double leftThreshold = 1.3;
+    double rightThreshold = 1.3;
     
+    //Reset global tracking
     double globalCurrentAngle = 0;
 
     public void runOpMode() {
@@ -107,9 +114,10 @@ public class SkystoneBlue extends LinearOpMode {
         waitForStart();
         
         if(opModeIsActive()) { 
+            releaseBlock();
             
             //Line up with skystones
-            PidDrive(26,0.15);
+            PidDrive(23,0.15);
             PidTurn(90);
         
             //Check the first stone
@@ -119,46 +127,60 @@ public class SkystoneBlue extends LinearOpMode {
                 position = -1;
                 goToSkystone();
                 lowerHook();
+                sleep(700);
+                grabBlock();
             } 
         
             //Check the second stone unless already found
             if (position == 1) {
-                ImuDrive(.7,6.5,.1);
+                ImuDrive(1,5,.1);
                 if(confirmSkystone()) {
                     position = 0;
                     goToSkystone();
                     lowerHook();
+                    sleep(700);
+                    grabBlock();
                 } 
             }
         
             //Drive to last stone
             if (position == 1) {
-                ImuDrive(.7,6,.1);
+                ImuDrive(1,5,.1);
                 goToSkystone();
                 position = 1;
             
                 lowerHook();
+                sleep(700);
+                grabBlock();
             }
         
-            sleep(600);
-        
-            //Drag block out of quarry
-            strafeDrive(-0.4,12.5);
+            sleep(200);
+            
+            raiseHook();
+            
+            strafeDrive(-0.8,9);
         
             //Drive past bridge
             if(position == -1) {
-                PidDrive(36,0.15);
+                PidDrive(70,0.15);
             } else if(position == 0) {
-                PidDrive(45,0.15); 
+                PidDrive(75,0.15); 
             } else {
-                PidDrive(53,0.15);
+                PidDrive(80,0.15);
             }
-        
-            //Let go of block and ram into wall
+            
+            dropHook();
+            strafeDrive(0.8,12);
+            releaseBlock();
+            
+            sleep(150);
             raiseHook();
             
-            PidDrive(-79,0.15);
-        
+            strafeDrive(-0.8,12);
+            
+            
+            PidDrive(-115,0.15);
+    
             //Drive towards stones and square against wall
             goCloseToSkystone();
             
@@ -166,31 +188,36 @@ public class SkystoneBlue extends LinearOpMode {
             
             //Drive to the correct block
             if(position == -1) {
-                ImuDrive(-.7,15,.1);
+                ImuDrive(-1,15,.1);
             } else if(position == 0) {
-                ImuDrive(-.7,6,.1);
+                ImuDrive(-1,8,.1);
             } else {
     
             }
             
-            //Grab block and drag it out
-            goToSkystone();
+            goToSkystone2();
             lowerHook();
-       
-            sleep(600);
+            sleep(700);
+            grabBlock();
+            sleep(200);
+            raiseHook();
             
-            strafeDrive(-0.4,12);
+            strafeDrive(-0.8,8);
         
             //Drive past bridge
             if(position == -1) {
-                PidDrive(59,0.15);
+                PidDrive(93,0.15);
             } else if(position == 0) {
-                PidDrive(66,0.15); 
+                PidDrive(98,0.15); 
             } else {
-                PidDrive(75,0.15);
+                PidDrive(103,0.15);
             }
-        
-            //Let go of block and try for a third block
+            
+            dropHook();
+            strafeDrive(0.8,10);
+            releaseBlock();
+            
+            sleep(150);
             raiseHook();
        
             //if(position == -1) {
@@ -221,29 +248,33 @@ public class SkystoneBlue extends LinearOpMode {
                 
             //}
             
-            raiseHook();
             
             //Drive and align to foundation
             
-            PidDrive(60,0.15);
-            
             PidTurn(90);
             
-            PidDrive(-6,0.15);
+            sleep(200);
             
-            FG1.setPosition(.5);
-            FG2.setPosition(.5);
+            ImuDrive(.3,4,0.15);
             
-            PidDrive(8,0.15);
+            FG1.setPosition(0.2);
+            FG2.setPosition(0.15);
             
-            PidTurn(90);
+            sleep(10000);
             
-            FG1.setPosition(.5);
-            FG2.setPosition(.5);
+            PidDrive(20,0.15);
             
-            sleep(300);
+            sleep(100);
             
-            PidDrive(-70,0.15);
+            //PidTurn(90);
+            ImuTurn(1, 90, 0.2);
+            
+            FG1.setPosition(1);
+            FG2.setPosition(1);
+            
+            PidDrive(6,0.15);
+            
+            
        
         }    
     }
@@ -264,13 +295,16 @@ public class SkystoneBlue extends LinearOpMode {
         
         w1 = hardwareMap.dcMotor.get("w1");
         w2 = hardwareMap.dcMotor.get("w2");
-        w3 = hardwareMap.crservo.get("w3");
+        //w3 = hardwareMap.crservo.get("w3");
         w4 = hardwareMap.crservo.get("w4");
         w5 = hardwareMap.crservo.get("w5");
         w6 = hardwareMap.crservo.get("w6");
         
-        skystone_grabber = hardwareMap.servo.get("skystone_grabber");
+        skystone_grabber = hardwareMap.servo.get("skystone_grabber ");
+        GGSR = hardwareMap.servo.get("GGSR");
         skystone_grabber2 = hardwareMap.servo.get("skystone_grabber2");
+        GGSL = hardwareMap.servo.get("GGSL");
+        //skystone_grabber2 = hardwareMap.servo.get("skystone_grabber2");
         
         ColorSensor_REV_ColorRangeSensor = hardwareMap.colorSensor.get("ColorSensor");
         ColorSensor2 = hardwareMap.colorSensor.get("ColorSensor2");
@@ -289,11 +323,17 @@ public class SkystoneBlue extends LinearOpMode {
         m3.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         m4.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         
+        FG2.setDirection(Servo.Direction.REVERSE);
+        
         FG1.setPosition(1);
         FG2.setPosition(1);
- 
-        //Phone Servo Set
-        raiseHook();
+        
+        skystone_grabber.setDirection(Servo.Direction.REVERSE);
+        GGSR.setDirection(Servo.Direction.REVERSE);
+        skystone_grabber.setPosition(1);
+        skystone_grabber2.setPosition(1);
+        GGSL.setPosition(0);
+        GGSR.setPosition(0);
         
         //Resetting Encoders
         resetEncoders();
@@ -416,10 +456,10 @@ public class SkystoneBlue extends LinearOpMode {
             }
             stopMotors();
             currentAngle = getTrueZAngle();
-            while(currentAngle > targetAngle && opModeIsActive()) { 
-                currentAngle = getReadZAngle();
-                turn(-correction);
-            }
+            //while(currentAngle > targetAngle && opModeIsActive()) { 
+            //    currentAngle = getReadZAngle();
+            //    turn(-correction);
+            //}
             
         }else if(angle < 0 && targetAngle <= 0 && targetAngle > -170) {
             currentAngle = getReadZAngle();
@@ -440,10 +480,10 @@ public class SkystoneBlue extends LinearOpMode {
             }
             stopMotors();
             currentAngle = getTrueZAngle();
-            while(currentAngle > targetAngle && opModeIsActive()) { 
-                currentAngle = getTrueZAngle();
-                turn(-correction);
-            }
+            //while(currentAngle > targetAngle && opModeIsActive()) { 
+            //    currentAngle = getTrueZAngle();
+            //    turn(-correction);
+            //}
         
         
         }else if(angle < 0 && targetAngle < -170 && targetAngle > -350) {
@@ -737,41 +777,26 @@ public class SkystoneBlue extends LinearOpMode {
         return angles.firstAngle;
     }
     
-    public  void wheelsIn() {
-        w1.setPower(-1);
-        w2.setPower(1);
-        w3.setPower(1);
-        w4.setPower(1);
-        w5.setPower(-1);
-        w6.setPower(-1);
-    }
-    
-    public  void wheelsOut() {
-        w1.setPower(1);
-        w2.setPower(-1);
-        w3.setPower(-1);
-        w4.setPower(-1);
-        w5.setPower(1);
-        w6.setPower(1);
-    }
-    
-    public  void wheelsOff() {
-        w1.setPower(0);
-        w2.setPower(0);
-        w3.setPower(0);
-        w4.setPower(0);
-        w5.setPower(0);
-        w6.setPower(0);
-    }
-    
     public void raiseHook() {
-        skystone_grabber2.setPosition(0);
-        skystone_grabber.setPosition(1);
+        skystone_grabber2.setPosition(0.92);
     }
     
     public void lowerHook() {
-        skystone_grabber.setPosition(0.43);
+        skystone_grabber2.setPosition(0.56);
     }
+    
+    public void dropHook() {
+        skystone_grabber2.setPosition(0.72);
+    }
+    
+    public void grabBlock() {
+        GGSR.setPosition(0.3);
+    }
+    
+    public void releaseBlock() {
+        GGSR.setPosition(0.05);
+    }
+    
     
     public boolean checkSkystone() {
         double counter = 0;
@@ -793,12 +818,13 @@ public class SkystoneBlue extends LinearOpMode {
         double counter = 0;
         double rightSkystoneRatio = getRightColorRatio();
         
-        while(counter < 50 && opModeIsActive()) {
+        while(counter < 40 && opModeIsActive()) {
             rightSkystoneRatio = getRightColorRatio();
             counter = counter + 1;
         }
         
-        if (rightSkystoneRatio < rightThreshold) {
+        
+        if (rightSkystoneRatio < 1.4) {
             return true;
         } else {
             return false;
@@ -808,15 +834,31 @@ public class SkystoneBlue extends LinearOpMode {
     public void goToSkystone() {
         double range = GetColorRange();
         
-        while(!(range < 7) && opModeIsActive()){
+        while(!(range < 10) && opModeIsActive()){
             range = GetColorRange(); 
             setRawMotorPowers(.37,-.37,-.37,.37);
         }
         
-        //while(!(range > 7.5)){
-        //    range = GetColorRange(); 
-        //    setRawMotorPowers(.2,-.2,-.2,.2);
-        //}
+        while(!(range > 15)){
+            range = GetColorRange(); 
+            setRawMotorPowers(-.35,.35,.35,-.35);
+        }
+        
+        setRawMotorPowers(0,0,0,0);
+    }
+    
+    public void goToSkystone2() {
+        double range = GetColorRange();
+        
+        while(!(range < 9) && opModeIsActive()){
+            range = GetColorRange(); 
+            setRawMotorPowers(.37,-.37,-.37,.37);
+        }
+        
+        while(!(range > 11)){
+            range = GetColorRange(); 
+            setRawMotorPowers(-.27,.27,.27,-.27);
+        }
         
         setRawMotorPowers(0,0,0,0);
     }
@@ -842,7 +884,12 @@ public class SkystoneBlue extends LinearOpMode {
     }
     
     public double getRightColorRatio() {
+        int zero = 0;
+        if (ColorSensor_REV_ColorRangeSensor.blue() == 0){
+            return zero;
+        } else {
         return  ColorSensor_REV_ColorRangeSensor.red() / ColorSensor_REV_ColorRangeSensor.blue();
+        }
     }
     
     public double getLeftColorRatio() {
@@ -854,4 +901,5 @@ public class SkystoneBlue extends LinearOpMode {
     }
     
 }
+
 
